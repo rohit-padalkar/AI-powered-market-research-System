@@ -196,17 +196,3 @@ engine = payload.get("engine", "serpapi")
 * Research assistants
 * Chatbot integrations
 * Developer tools for search aggregation
-
----
-
-## 🧑‍💻 Author
-
-Built using Flask with integration of SerpApi and Tavily for flexible search capabilities.
-
----
-
-If you want, I can also:
-
-* 🔥 Add a **frontend UI README section**
-* 💼 Make this **resume/project description**
-* ⭐ Add **GitHub badges + deployment steps (Render/Vercel/Docker)**
