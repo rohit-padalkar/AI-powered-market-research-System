@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔍 Unified Research System - SerpApi & Tavily</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --secondary: #10b981;
+        --secondary-dark: #059669;
+        --accent: #ec4899;
+        --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --bg-gradient-tavily: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        --bg-light: #f8fafc;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border: #e2e8f0;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      }
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg-gradient);
+        min-height: 100vh;
+        padding: 2rem 1rem;
+        line-height: 1.6;
+        color: var(--text-primary);
+        transition: background 0.5s ease;
+      }
+
+      body.tavily-theme {
+        background: var(--bg-gradient-tavily);
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: var(--shadow-xl);
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: var(--bg-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+      }
+
+      body.tavily-theme .header h1 {
+        background: var(--bg-gradient-tavily);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .header p {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+      }
+
+      .engine-selector {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        background: #f1f5f9;
+        padding: 0.5rem;
+        border-radius: 12px;
+      }
+
+      .engine-option {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+
+      .engine-option:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .engine-option.active {
+        background: #fff;
+        border-color: var(--primary);
+        color: var(--primary);
+        box-shadow: var(--shadow);
+      }
+
+      body.tavily-theme .engine-option.active {
+        border-color: var(--secondary);
+        color: var(--secondary);
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group.hidden {
+        display: none;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+      }
+
+      input[type="text"],
+      input[type="search"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #fff;
+        font-family: inherit;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        transform: translateY(-1px);
+      }
+
+      body.tavily-theme input:focus,
+      body.tavily-theme select:focus {
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+      }
+
+      input:hover,
+      select:hover {
+        border-color: var(--primary-light);
+      }
+
+      body.tavily-theme input:hover,
+      body.tavily-theme select:hover {
+        border-color: var(--secondary);
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background: #f0fdf4;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+      }
+
+      .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: var(--primary);
+      }
+
+      body.tavily-theme .checkbox-group input[type="checkbox"] {
+        accent-color: var(--secondary);
+      }
+
+      .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        flex: 1;
+      }
+
+      button {
+        width: 100%;
+        padding: 1.1rem;
+        border-radius: 12px;
+        border: none;
+        background: var(--bg-gradient);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow);
+        margin-top: 0.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      body.tavily-theme button {
+        background: var(--bg-gradient-tavily);
+      }
+
+      button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      button:hover::before {
+        left: 100%;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .status {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border-radius: 12px;
+        background: #f1f5f9;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        text-align: center;
+        min-height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+
+      .status.loading {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+      }
+
+      @keyframes loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .status.success {
+        background: #d1fae5;
+        color: #065f46;
+        font-weight: 600;
+      }
+
+      .status.error {
+        background: #fee2e2;
+        color: #991b1b;
+        font-weight: 600;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(99, 102, 241, 0.3);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 0.5rem;
+      }
+
+      body.tavily-theme .spinner {
+        border-color: rgba(16, 185, 129, 0.3);
+        border-top-color: var(--secondary);
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      #results {
+        margin-top: 2rem;
+      }
+
+      .answer-box {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 2px solid var(--secondary);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        animation: slideIn 0.4s ease-out;
+      }
+
+      .answer-box h3 {
+        color: var(--secondary-dark);
+        margin-bottom: 0.75rem;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .answer-box p {
+        color: #065f46;
+        line-height: 1.8;
+        font-size: 1.05rem;
+      }
+
+      .results-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .result {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-radius: 16px;
+        background: #fff;
+        border: 2px solid var(--border);
+        transition: all 0.3s ease;
+        animation: slideIn 0.4s ease-out;
+        animation-fill-mode: both;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .result:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-light);
+      }
+
+      body.tavily-theme .result:hover {
+        border-color: var(--secondary);
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.75rem;
+        gap: 1rem;
+      }
+
+      .result h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+        line-height: 1.3;
+        flex: 1;
+      }
+
+      body.tavily-theme .result h3 {
+        color: var(--secondary);
+      }
+
+      .result-score {
+        background: var(--primary);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      body.tavily-theme .result-score {
+        background: var(--secondary);
+      }
+
+      .result a {
+        color: #0ea5e9;
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 0.75rem;
+        word-break: break-all;
+        transition: color 0.2s;
+      }
+
+      .result a:hover {
+        color: var(--primary);
+        text-decoration: underline;
+      }
+
+      body.tavily-theme .result a:hover {
+        color: var(--secondary);
+      }
+
+      .result p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .result-meta {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      .images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .image-item {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid var(--border);
+        transition: transform 0.2s;
+      }
+
+      .image-item:hover {
+        transform: scale(1.05);
+      }
+
+      .image-item img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+      }
+
+      .no-results {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+      }
+
+      .no-results::before {
+        content: '🔍';
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 1rem;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .action-btn {
+        flex: 1;
+        padding: 0.9rem;
+        border-radius: 12px;
+        border: 2px solid var(--primary);
+        background: #fff;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      body.tavily-theme .action-btn {
+        border-color: var(--secondary);
+        color: var(--secondary);
+      }
+
+      .action-btn:hover {
+        background: var(--primary);
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      body.tavily-theme .action-btn:hover {
+        background: var(--secondary);
+      }
+
+      .action-btn:active {
+        transform: translateY(0);
+      }
+
+      .action-btn.copied {
+        background: var(--secondary);
+        border-color: var(--secondary);
+        color: #fff;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding: 2rem 1.5rem;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .result {
+          padding: 1.25rem;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .result-header {
+          flex-direction: column;
+        }
+
+        .images-grid {
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+
+        .engine-selector {
+          flex-direction: column;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Unified Research System</h1>
+        <p>Powerful search powered by SerpApi & Tavily</p>
+      </div>
+
+      <div class="engine-selector">
+        <div class="engine-option active" data-engine="serpapi">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔎</div>
+          <div>SerpApi</div>
+          <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.25rem;">Google Search</div>
+        </div>
+        <div class="engine-option" data-engine="tavily">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🤖</div>
+          <div>Tavily</div>
+          <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.25rem;">AI Research</div>
+        </div>
+      </div>
+
+      <form id="search-form">
+        <div class="form-group">
+          <label for="query">🔎 Search Query</label>
+          <input 
+            type="search"
+            id="query" 
+            name="query" 
+            placeholder="Enter your search term..." 
+            required 
+            autocomplete="off"
+          />
+        </div>
+
+        <button type="submit" id="submit-btn">
+          <span id="btn-text">Search</span>
+        </button>
+      </form>
+
+      <div class="status" id="status"></div>
+      <div id="results"></div>
+    </div>
+
+    <script>
+      const form = document.getElementById("search-form");
+      const resultsEl = document.getElementById("results");
+      const statusEl = document.getElementById("status");
+      const submitBtn = document.getElementById("submit-btn");
+      const btnText = document.getElementById("btn-text");
+      const engineOptions = document.querySelectorAll(".engine-option");
+      let currentEngine = "serpapi";
+
+      // Store results for each engine
+      const engineResults = {
+        serpapi: { html: "", status: "", statusClass: "", data: null },
+        tavily: { html: "", status: "", statusClass: "", data: null }
+      };
+
+      let currentSearchData = null;
+
+      // Engine selector handler
+      engineOptions.forEach(option => {
+        option.addEventListener("click", () => {
+          // Save current engine's results before switching
+          engineResults[currentEngine] = {
+            html: resultsEl.innerHTML,
+            status: statusEl.textContent,
+            statusClass: statusEl.className,
+            data: currentSearchData
+          };
+
+          currentEngine = option.dataset.engine;
+          
+          // Update active state
+          engineOptions.forEach(opt => opt.classList.remove("active"));
+          option.classList.add("active");
+
+          // Update theme
+          if (currentEngine === "tavily") {
+            document.body.classList.add("tavily-theme");
+          } else {
+            document.body.classList.remove("tavily-theme");
+          }
+
+          // Restore saved results for the new engine
+          resultsEl.innerHTML = engineResults[currentEngine].html;
+          statusEl.textContent = engineResults[currentEngine].status;
+          statusEl.className = engineResults[currentEngine].statusClass || "status";
+          currentSearchData = engineResults[currentEngine].data;
+        });
+      });
+
+      function addActionButtons() {
+        const actionDiv = document.createElement("div");
+        actionDiv.className = "action-buttons";
+        actionDiv.innerHTML = `
+          <button class="action-btn" id="copy-btn">
+            <span>📋</span>
+            <span>Copy Results</span>
+          </button>
+          <button class="action-btn" id="download-btn">
+            <span>📥</span>
+            <span>Download Report</span>
+          </button>
+        `;
+        resultsEl.insertBefore(actionDiv, resultsEl.firstChild);
+
+        document.getElementById("copy-btn").addEventListener("click", copyResults);
+        document.getElementById("download-btn").addEventListener("click", downloadReport);
+      }
+
+      function copyResults() {
+        if (!currentSearchData) return;
+
+        let textContent = `Search Results - ${currentEngine.toUpperCase()}\n`;
+        textContent += `Query: ${form.query.value}\n`;
+        textContent += `Date: ${new Date().toLocaleString()}\n`;
+        textContent += `${'='.repeat(60)}\n\n`;
+
+        if (currentEngine === "serpapi") {
+          currentSearchData.forEach((result, index) => {
+            textContent += `${index + 1}. ${result.title || "Untitled"}\n`;
+            textContent += `   URL: ${result.link}\n`;
+            textContent += `   ${result.snippet || "No description"}\n\n`;
+          });
+        } else {
+          if (currentSearchData.answer) {
+            textContent += `AI ANSWER:\n${currentSearchData.answer}\n\n`;
+            textContent += `${'='.repeat(60)}\n\n`;
+          }
+          
+          if (currentSearchData.results) {
+            currentSearchData.results.forEach((result, index) => {
+              textContent += `${index + 1}. ${result.title || "Untitled"}\n`;
+              textContent += `   URL: ${result.url}\n`;
+              if (result.score) textContent += `   Score: ${result.score.toFixed(2)}\n`;
+              textContent += `   ${result.content || "No description"}\n`;
+              if (result.published_date) textContent += `   Published: ${new Date(result.published_date).toLocaleDateString()}\n`;
+              textContent += `\n`;
+            });
+          }
+        }
+
+        navigator.clipboard.writeText(textContent).then(() => {
+          const copyBtn = document.getElementById("copy-btn");
+          const originalHTML = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<span>✅</span><span>Copied!</span>';
+          copyBtn.classList.add("copied");
+          
+          setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+            copyBtn.classList.remove("copied");
+          }, 2000);
+        }).catch(err => {
+          alert("Failed to copy: " + err.message);
+        });
+      }
+
+      function downloadReport() {
+        if (!currentSearchData) return;
+
+        let content = `Search Results Report\n`;
+        content += `${'='.repeat(60)}\n\n`;
+        content += `Search Engine: ${currentEngine.toUpperCase()}\n`;
+        content += `Query: ${form.query.value}\n`;
+        content += `Date: ${new Date().toLocaleString()}\n`;
+        content += `${'='.repeat(60)}\n\n`;
+
+        if (currentEngine === "serpapi") {
+          content += `Total Results: ${currentSearchData.length}\n\n`;
+          currentSearchData.forEach((result, index) => {
+            content += `${index + 1}. ${result.title || "Untitled"}\n`;
+            content += `   URL: ${result.link}\n`;
+            content += `   Description: ${result.snippet || "No description"}\n\n`;
+          });
+        } else {
+          if (currentSearchData.answer) {
+            content += `AI ANSWER:\n`;
+            content += `${currentSearchData.answer}\n\n`;
+            content += `${'='.repeat(60)}\n\n`;
+          }
+          
+          if (currentSearchData.results) {
+            content += `Total Results: ${currentSearchData.results.length}\n\n`;
+            currentSearchData.results.forEach((result, index) => {
+              content += `${index + 1}. ${result.title || "Untitled"}\n`;
+              content += `   URL: ${result.url}\n`;
+              if (result.score) content += `   Relevance Score: ${result.score.toFixed(2)}\n`;
+              content += `   Content: ${result.content || "No description"}\n`;
+              if (result.published_date) content += `   Published: ${new Date(result.published_date).toLocaleDateString()}\n`;
+              content += `\n`;
+            });
+          }
+        }
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `search-report-${currentEngine}-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        resultsEl.innerHTML = "";
+        
+        // Update UI for loading state
+        statusEl.className = "status loading";
+        statusEl.innerHTML = '<span class="spinner"></span>Searching...';
+        submitBtn.disabled = true;
+        btnText.textContent = "Searching...";
+
+        const data = {
+          engine: currentEngine,
+          query: form.query.value,
+        };
+
+        try {
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+          
+          const payload = await response.json();
+          
+          if (!payload.success) {
+            throw new Error(payload.error || "Search failed");
+          }
+
+          // Handle SerpApi response
+          if (payload.engine === "serpapi") {
+            const queryTime = payload.query_time || 0;
+            const results = payload.results || [];
+            currentSearchData = results;
+            
+            statusEl.className = "status success";
+            statusEl.textContent = `✅ Found ${results.length} result${results.length !== 1 ? 's' : ''}${queryTime ? ` in ${queryTime.toFixed(2)}s` : ''}`;
+
+            if (results.length === 0) {
+              resultsEl.innerHTML = `
+                <div class="no-results">
+                  <p>No results found for "${escapeHtml(form.query.value)}"</p>
+                  <p style="margin-top: 0.5rem; font-size: 0.9rem;">Try a different search term</p>
+                </div>
+              `;
+              submitBtn.disabled = false;
+              btnText.textContent = "Search";
+              return;
+            }
+
+            addActionButtons();
+
+            const header = document.createElement("div");
+            header.className = "results-header";
+            header.innerHTML = `📊 ${results.length} Result${results.length !== 1 ? 's' : ''} Found`;
+            resultsEl.appendChild(header);
+
+            results.forEach((result, index) => {
+              setTimeout(() => {
+                const div = document.createElement("div");
+                div.className = "result";
+                div.style.animationDelay = `${index * 0.05}s`;
+                div.innerHTML = `
+                  <h3>${escapeHtml(result.title || "Untitled result")}</h3>
+                  <a href="${escapeHtml(result.link)}" target="_blank" rel="noreferrer">
+                    ${escapeHtml(result.link)}
+                  </a>
+                  <p>${escapeHtml(result.snippet || "No description available.")}</p>
+                `;
+                resultsEl.appendChild(div);
+              }, index * 50);
+            });
+          }
+          // Handle Tavily response
+          else {
+            const searchData = payload.data;
+            currentSearchData = searchData;
+            const responseTime = searchData.response_time || 0;
+            
+            statusEl.className = "status success";
+            statusEl.textContent = `✅ Found ${searchData.results?.length || 0} result${(searchData.results?.length || 0) !== 1 ? 's' : ''}${responseTime ? ` in ${responseTime.toFixed(2)}s` : ''}`;
+
+            addActionButtons();
+
+            // Display answer if available
+            if (searchData.answer) {
+              const answerDiv = document.createElement("div");
+              answerDiv.className = "answer-box";
+              answerDiv.innerHTML = `
+                <h3>💡 AI Answer</h3>
+                <p>${escapeHtml(searchData.answer)}</p>
+              `;
+              resultsEl.appendChild(answerDiv);
+            }
+
+            // Display search results
+            if (!searchData.results || searchData.results.length === 0) {
+              resultsEl.innerHTML += `
+                <div class="no-results">
+                  <p>No results found for "${escapeHtml(form.query.value)}"</p>
+                  <p style="margin-top: 0.5rem; font-size: 0.9rem;">Try a different search term</p>
+                </div>
+              `;
+              submitBtn.disabled = false;
+              btnText.textContent = "Search";
+              return;
+            }
+
+            const header = document.createElement("div");
+            header.className = "results-header";
+            header.innerHTML = `📊 ${searchData.results.length} Result${searchData.results.length !== 1 ? 's' : ''} Found`;
+            resultsEl.appendChild(header);
+
+            searchData.results.forEach((result, index) => {
+              setTimeout(() => {
+                const div = document.createElement("div");
+                div.className = "result";
+                div.style.animationDelay = `${index * 0.05}s`;
+                
+                const publishedDate = result.published_date 
+                  ? new Date(result.published_date).toLocaleDateString() 
+                  : '';
+                
+                div.innerHTML = `
+                  <div class="result-header">
+                    <h3>${escapeHtml(result.title || "Untitled result")}</h3>
+                    ${result.score ? `<span class="result-score">Score: ${result.score.toFixed(2)}</span>` : ''}
+                  </div>
+                  <a href="${escapeHtml(result.url)}" target="_blank" rel="noreferrer">
+                    ${escapeHtml(result.url)}
+                  </a>
+                  <p>${escapeHtml(result.content || "No description available.")}</p>
+                  ${publishedDate ? `
+                    <div class="result-meta">
+                      <span>📅 ${publishedDate}</span>
+                    </div>
+                  ` : ''}
+                `;
+                resultsEl.appendChild(div);
+              }, index * 50);
+            });
+          }
+
+          submitBtn.disabled = false;
+          btnText.textContent = "Search";
+        } catch (error) {
+          statusEl.className = "status error";
+          statusEl.textContent = `❌ ${error.message}`;
+          submitBtn.disabled = false;
+          btnText.textContent = "Search";
+        }
+      });
+
+      function escapeHtml(text) {
+        if (text == null) return '';
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    </script>
+  </body>
+</html>
+

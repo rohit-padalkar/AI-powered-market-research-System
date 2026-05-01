@@ -1,113 +1,58 @@
 import os
-from functools import lru_cache
 from typing import Any, Dict
 
 from flask import Flask, jsonify, render_template, request
 from serpapi import GoogleSearch
-from tavily import TavilyClient
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
-
-
-# SerpApi Configuration
-SERPAPI_KEY = "0142b19667b167a550fe1a5d7d895f2c51db912a102cbb8b1cd6797c4915472a"
+app = Flask(__name__)
 
 
-# Tavily Configuration
-@lru_cache(maxsize=1)
-def get_tavily_client() -> TavilyClient:
-    """
-    Lazily instantiate the Tavily client so the API key is read once and shared
-    across the app. Falls back to the demo key from the original script, but
-    prefers the environment variable for safety.
-    """
-    api_key = os.environ.get(
-        "TAVILY_API_KEY", "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"
-    )
-    if not api_key:
-        raise RuntimeError(
-            "TAVILY_API_KEY is not set and no fallback key is available."
-        )
-    return TavilyClient(api_key)
+def run_serpapi_search(query: str, location: str, start: int) -> Dict[str, Any]:
+    # API key is set permanently
+    api_key = "0142b19667b167a550fe1a5d7d895f2c51db912a102cbb8b1cd6797c4915472a"
 
-
-def run_serpapi_search(query: str) -> Dict[str, Any]:
-    """
-    Execute a Google search via the SerpApi client.
-    
-    Args:
-        query: Search phrase
-    
-    Returns:
-        Full response dictionary from SerpApi
-    """
     params = {
         "engine": "google",
         "q": query,
+        "location": location or "Seattle-Tacoma, WA, Washington, United States",
         "hl": "en",
         "gl": "us",
         "google_domain": "google.com",
+        "start": start,
         "safe": "active",
-        "api_key": SERPAPI_KEY,
+        "api_key": api_key,
     }
 
     search = GoogleSearch(params)
     return search.get_dict()
 
 
-@app.get("/")
+@app.route("/")
 def index():
-    """Serve the unified single-page UI."""
     return render_template("index.html")
 
 
-@app.post("/api/search")
+@app.post("/search")
 def search():
-    """
-    Unified search endpoint that handles both SerpApi and Tavily searches.
-    The engine type is determined by the 'engine' parameter in the request.
-    """
-    payload = request.get_json(force=True, silent=True) or {}
-    engine = payload.get("engine", "serpapi").lower()
-    query = (payload.get("query") or "").strip()
+    data = request.get_json(force=True, silent=True) or {}
+    query = (data.get("query") or "").strip()
+    location = (data.get("location") or "").strip()
+    start = max(int(data.get("start") or 0), 0)
 
     if not query:
-        return jsonify({"success": False, "error": "Query cannot be empty."}), 400
+        return jsonify({"error": "Query is required."}), 400
 
     try:
-        if engine == "tavily":
-            # Tavily search
-            client = get_tavily_client()
-            response = client.search(
-                query=query,
-                search_depth="advanced",
-                include_answer=True,
-                include_images=False,
-            )
-            return jsonify({
-                "success": True,
-                "engine": "tavily",
-                "data": response
-            })
-
-        else:
-            # SerpApi search (default)
-            results = run_serpapi_search(query)
-            organic = results.get("organic_results", [])
-            query_time = results.get("search_metadata", {}).get("total_time_taken")
-
-            return jsonify({
-                "success": True,
-                "engine": "serpapi",
-                "query_time": query_time,
-                "results": organic
-            })
-
+        results = run_serpapi_search(query, location, start)
+        organic = results.get("organic_results", [])
+        return jsonify(
+            {
+                "query_time": results.get("search_metadata", {}).get("total_time_taken"),
+                "results": organic,
+            }
+        )
     except Exception as exc:
-        return jsonify({
-            "success": False,
-            "error": f"Search failed: {str(exc)}"
-        }), 500
+        return jsonify({"error": str(exc)}), 400
 
 
 if __name__ == "__main__":
